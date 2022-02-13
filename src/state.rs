@@ -55,7 +55,7 @@ impl State {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Copy, Clone, Debug, PartialOrd, PartialEq)]
 pub enum Player {
     XPlayer,
     OPlayer,

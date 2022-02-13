@@ -7,9 +7,11 @@ pub mod command;
 pub mod command_receiver;
 pub mod error;
 pub mod state;
+pub mod stream_in;
 
 const LENGTH: usize = 3;
 
+#[derive(Copy, Clone, Debug, PartialOrd, PartialEq)]
 pub enum GameResult {
     Draw,
     Win(Player),
@@ -32,33 +34,36 @@ impl<T: CommandReceiver> Engine<T> {
 
 impl<T: CommandReceiver> Engine<T> {
     pub fn run(mut self) -> GameResult {
+        let mut player_cursor = Player::XPlayer;
         loop {
-            match self.commands_receiver.get_command() {
+            match self
+                .commands_receiver
+                .get_command_from_player(player_cursor)
+            {
                 Err(e) => {
                     println!("{e}")
                 }
-                Ok((player, cmd)) => match cmd {
+                Ok(cmd) => match cmd {
                     Command::Turn(coordinate) => {
-                        self.state
-                            .turn(player, coordinate)
-                            .1
-                            .unwrap_or_else(|e| println!("wrong turn {e}"));
-
-                        let game_result = check_state(&self.state, player, coordinate);
-                        match game_result {
-                            GameResult::Draw => {
-                                println!("game over! Draw!");
-                                return game_result;
+                        if let Err(e) = self.state.turn(player_cursor, coordinate).1 {
+                            println!("wrong turn {e}")
+                        } else {
+                            let game_result = check_state(&self.state, player_cursor, coordinate);
+                            match game_result {
+                                GameResult::Draw => {
+                                    println!("game over! Draw!");
+                                    return game_result;
+                                }
+                                GameResult::Win(winner) => {
+                                    println!("Congratulations! {winner:?} WIN!");
+                                    return game_result;
+                                }
+                                GameResult::InProgress => player_cursor = player_cursor.inverse(),
                             }
-                            GameResult::Win(winner) => {
-                                println!("Congratulations! {winner:?} WIN!");
-                                return game_result;
-                            }
-                            GameResult::InProgress => {}
                         }
                     }
                     Command::Surrender => {
-                        let winner = player.inverse();
+                        let winner = player_cursor.inverse();
                         println!("Congratulations! {winner:?} WIN!");
                         return GameResult::Win(winner);
                     }
@@ -87,7 +92,7 @@ fn check_state(state: &State, p: Player, coordinate: usize) -> GameResult {
         .map(|i| i * LENGTH + i)
         .all(|idx| predicate()(board[idx]));
     let secondary_diagonal = (0..LENGTH)
-        .map(|i| (LENGTH - i - 1) + i)
+        .map(|i| (LENGTH - i - 1) * LENGTH + i)
         .all(|idx| predicate()(board[idx]));
     let all_filled = (0..LENGTH * LENGTH)
         .map(|idx| board[idx])
