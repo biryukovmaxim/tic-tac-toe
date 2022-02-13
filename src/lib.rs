@@ -77,23 +77,24 @@ fn check_state(state: &State, p: Player, coordinate: usize) -> GameResult {
     let y = coordinate / LENGTH;
     let x = coordinate % LENGTH;
     let board = state.board();
-    let predicate: Box<dyn Fn() -> Box<dyn FnOnce(Mark) -> bool>> = Box::new(|| match p {
-        Player::XPlayer => Box::new(|mark: Mark| mark.is_x()),
-        Player::OPlayer => Box::new(|mark: Mark| mark.is_o()),
-    });
+
+    let predicate = || match p {
+        Player::XPlayer => Mark::is_x,
+        Player::OPlayer => Mark::is_o,
+    };
 
     let vert = (0..LENGTH)
         .map(|x| y * LENGTH + x)
-        .all(|idx| predicate()(board[idx]));
+        .all(|idx| predicate()(&board[idx]));
     let horizontal = (0..LENGTH)
         .map(|y| y * LENGTH + x)
-        .all(|idx| predicate()(board[idx]));
+        .all(|idx| predicate()(&board[idx]));
     let main_diagonal = (0..LENGTH)
         .map(|i| i * LENGTH + i)
-        .all(|idx| predicate()(board[idx]));
+        .all(|idx| predicate()(&board[idx]));
     let secondary_diagonal = (0..LENGTH)
         .map(|i| (LENGTH - i - 1) * LENGTH + i)
-        .all(|idx| predicate()(board[idx]));
+        .all(|idx| predicate()(&board[idx]));
     let all_filled = (0..LENGTH * LENGTH)
         .map(|idx| board[idx])
         .all(|m| !m.is_empty());
