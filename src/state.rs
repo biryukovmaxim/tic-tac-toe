@@ -28,12 +28,12 @@ impl Default for State {
 }
 
 impl State {
-    pub fn turn(&mut self, p: Player, coordinate: usize) -> Result<(), Error> {
+    pub fn turn(&mut self, p: Player, coordinate: usize) -> (Player, Result<(), Error>) {
         if p != self.turn {
-            Err(Error::AnotherPlayerTurn(p, self.turn))
+            (self.turn, Err(Error::AnotherPlayerTurn(p, self.turn)))
         } else {
             match self.board.0.get_mut(coordinate) {
-                None => Err(Error::CoordinateNotExists(coordinate)),
+                None => (self.turn, Err(Error::CoordinateNotExists(coordinate))),
                 Some(m) => {
                     if let Mark::None = m {
                         match p {
@@ -41,13 +41,17 @@ impl State {
                             Player::OPlayer => *m = Mark::O,
                         }
                         self.switch_player_turn();
-                        Ok(())
+                        (self.turn, Ok(()))
                     } else {
-                        return Err(Error::CoordinateFilled(coordinate, *m));
+                        return (self.turn, Err(Error::CoordinateFilled(coordinate, *m)));
                     }
                 }
             }
         }
+    }
+
+    pub fn board(&self) -> &[Mark; 9] {
+        &self.board.0
     }
 }
 
@@ -73,6 +77,32 @@ pub enum Mark {
     X,
 }
 
+impl Mark {
+    pub fn is_x(&self) -> bool {
+        if let Self::X = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_o(&self) -> bool {
+        if let Self::O = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        if let Self::None = self {
+            true
+        } else {
+            false
+        }
+    }
+}
+
 impl Default for Mark {
     fn default() -> Self {
         Mark::None
@@ -80,7 +110,7 @@ impl Default for Mark {
 }
 
 #[derive(Default, Debug)]
-struct Board([Mark; 9]);
+struct Board(pub(crate) [Mark; 9]);
 
 #[cfg(test)]
 mod tests {
@@ -89,19 +119,19 @@ mod tests {
     #[test]
     fn turns() {
         let mut state = State::default();
-        let bad_coordinate = state.turn(Player::XPlayer, 10);
+        let bad_coordinate = state.turn(Player::XPlayer, 10).1;
         assert_eq!(bad_coordinate, Err(Error::CoordinateNotExists(10)));
 
-        let first_turn = state.turn(Player::XPlayer, 0);
+        let first_turn = state.turn(Player::XPlayer, 0).1;
         assert_eq!(first_turn, Ok(()));
 
-        let double_turn = state.turn(Player::XPlayer, 0);
+        let double_turn = state.turn(Player::XPlayer, 0).1;
         assert_eq!(
             double_turn,
             Err(Error::AnotherPlayerTurn(Player::XPlayer, Player::OPlayer))
         );
 
-        let filled_turn = state.turn(Player::OPlayer, 0);
+        let filled_turn = state.turn(Player::OPlayer, 0).1;
         assert_eq!(filled_turn, Err(Error::CoordinateFilled(0, Mark::X)));
     }
 }
