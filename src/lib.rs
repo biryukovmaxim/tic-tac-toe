@@ -35,7 +35,8 @@ impl<T: CommandReceiver> Engine<T> {
 impl<T: CommandReceiver> Engine<T> {
     pub fn run(mut self) -> GameResult {
         let mut player_cursor = Player::XPlayer;
-        loop {
+        let mut game_result = GameResult::InProgress;
+        while let GameResult::InProgress = game_result {
             match self
                 .commands_receiver
                 .get_command_from_player(player_cursor)
@@ -44,32 +45,31 @@ impl<T: CommandReceiver> Engine<T> {
                     println!("{e}")
                 }
                 Ok(cmd) => match cmd {
+                    Command::Surrender => {
+                        let winner = player_cursor.inverse();
+                        println!("Congratulations! {winner:?} WIN!");
+                        game_result = GameResult::Win(winner);
+                    }
                     Command::Turn(coordinate) => {
                         if let Err(e) = self.state.turn(player_cursor, coordinate).1 {
                             println!("wrong turn {e}")
                         } else {
-                            let game_result = check_state(&self.state, player_cursor, coordinate);
+                            game_result = check_state(&self.state, player_cursor, coordinate);
                             match game_result {
                                 GameResult::Draw => {
                                     println!("game over! Draw!");
-                                    return game_result;
                                 }
                                 GameResult::Win(winner) => {
                                     println!("Congratulations! {winner:?} WIN!");
-                                    return game_result;
                                 }
                                 GameResult::InProgress => player_cursor = player_cursor.inverse(),
                             }
                         }
                     }
-                    Command::Surrender => {
-                        let winner = player_cursor.inverse();
-                        println!("Congratulations! {winner:?} WIN!");
-                        return GameResult::Win(winner);
-                    }
                 },
             }
         }
+        game_result
     }
 }
 
