@@ -7,5 +7,6 @@ The game engine for tic-tac-toe written in rust
 
 ## Commands:
 `turn X`, where x is coordinate in range (0 - 8)
+
 `surrender` - for surrender!
 
