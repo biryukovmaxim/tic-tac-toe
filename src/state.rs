@@ -43,7 +43,7 @@ impl State {
                         self.switch_player_turn();
                         (self.turn, Ok(()))
                     } else {
-                        return (self.turn, Err(Error::CoordinateFilled(coordinate, *m)));
+                        (self.turn, Err(Error::CoordinateFilled(coordinate, *m)))
                     }
                 }
             }
@@ -79,27 +79,15 @@ pub enum Mark {
 
 impl Mark {
     pub fn is_x(&self) -> bool {
-        if let Self::X = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, Self::X)
     }
 
     pub fn is_o(&self) -> bool {
-        if let Self::O = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, Self::O)
     }
 
     pub fn is_empty(&self) -> bool {
-        if let Self::None = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, Self::None)
     }
 }
 

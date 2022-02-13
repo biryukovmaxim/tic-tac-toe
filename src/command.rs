@@ -15,7 +15,7 @@ impl TryFrom<&str> for Command {
                 "surrender" => Ok(Command::Surrender),
                 "turn" => chunks_iter
                     .next()
-                    .ok_or(Error::ParseCommandError(value.to_owned()))?
+                    .ok_or_else(|| Error::ParseCommandError(value.to_owned()))?
                     .parse::<usize>()
                     .map_or_else(
                         |_| Err(Error::ParseCommandError(value.to_owned())),
